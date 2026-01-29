@@ -3,115 +3,103 @@ import pandas as pd
 from datetime import datetime
 import os
 import uuid
+import time
 
-# Configuración inicial
+# Configuración inicial para móvil
 st.set_page_config(page_title="Comedor Pro", layout="centered")
 
-# Truco JS para el scroll al inicio
-st.components.v1.html("<script>window.parent.scrollTo(0,0);</script>", height=0)
-
-# --- ESTÉTICA CYBERPUNK SOFT (ALTO CONTRASTE) ---
+# CSS Avanzado para feedback visual
 st.markdown("""
     <style>
     .stApp { background-color: #0d0221 !important; }
-    h1, h2, h3, p, span, label { color: #ffffff !important; font-family: 'Segoe UI', sans-serif; }
     
-    /* Botones de Selección */
-    div.stButton > button { 
-        width: 100%; height: 50px; border-radius: 8px; 
-        font-weight: bold; border: 2px solid #5b21b6 !important;
-        background-color: #1a1a2e !important; color: #ffffff !important;
+    .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
+    
+    /* Efecto de botones: Al tocar se encogen */
+    div.stButton > button:active {
+        transform: scale(0.95);
+        transition: 0.1s;
     }
+
+    div.stButton > button { 
+        width: 100%; height: 60px !important; border-radius: 10px; 
+        font-size: 16px !important; font-weight: bold;
+        border: 2px solid #5b21b6 !important;
+        background-color: #1a1a2e !important; color: #ffffff !important;
+        transition: all 0.2s;
+    }
+
+    /* Botón seleccionado (Alumbra) */
     .stButton button[kind="primary"] { 
-        background-color: #5b21b6 !important; 
-        box-shadow: 0 0 10px #5b21b6;
+        background-color: #7c3aed !important; 
+        box-shadow: 0 0 20px #7c3aed;
         border: 2px solid #ffffff !important;
     }
     
-    /* Botón GUARDAR */
+    /* Botón GUARDAR: Feedback de éxito */
     .btn-save button {
-        background-color: #059669 !important; color: #ffffff !important; 
-        font-size: 18px !important; border: 2px solid #ffffff !important;
-        box-shadow: 0 4px 0px #047857 !important;
+        background-color: #059669 !important; height: 80px !important;
+        font-size: 22px !important; border: 2px solid #ffffff !important;
+        box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
     }
     
-    /* Cuadros de Totales */
-    .stat-card {
-        padding: 10px; border-radius: 12px; border: 1px solid #06b6d4;
-        text-align: center; background: rgba(6, 182, 212, 0.1);
-        margin-bottom: 10px;
+    .btn-save button:active {
+        background-color: #10b981 !important;
+        box-shadow: 0 0 30px #10b981;
     }
-    .stat-rep { border-color: #7c3aed; background: rgba(124, 58, 237, 0.1); }
 
-    /* Botón BORRAR (Rojo Sólido) */
-    .btn-del button {
-        background-color: #b91c1c !important; color: white !important;
-        border: 1px solid white !important; height: 38px !important;
-    }
+    p, b, label { color: white !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- MANEJO DE DATOS ---
+# --- LÓGICA DE DATOS ---
 archivo = "registro_comedor.csv"
-cols_fijas = ["ID", "Año", "Seccion", "Mencion", "Repitiente", "Hora"]
-
 def cargar_datos():
     if os.path.exists(archivo):
-        try:
-            df = pd.read_csv(archivo)
-            if "Repitiente" not in df.columns: raise ValueError()
-            return df
-        except:
-            df = pd.DataFrame(columns=cols_fijas)
-            df.to_csv(archivo, index=False)
-            return df
-    else:
-        df = pd.DataFrame(columns=cols_fijas)
-        df.to_csv(archivo, index=False)
-        return df
+        try: return pd.read_csv(archivo)
+        except: return pd.DataFrame(columns=["ID", "Año", "Seccion", "Mencion", "Repitiente", "Hora"])
+    return pd.DataFrame(columns=["ID", "Año", "Seccion", "Mencion", "Repitiente", "Hora"])
 
-# --- LIMPIAR SESIÓN AL INICIAR ---
-if 'init' not in st.session_state:
-    st.session_state.pagina = "registro"
-    st.session_state.s_a = st.session_state.s_s = st.session_state.s_m = None
-    st.session_state.init = True
+if 's_a' not in st.session_state:
+    st.session_state.update({'s_a': None, 's_s': None, 's_m': None, 'pagina': 'registro'})
 
-# --- NAVEGACIÓN ---
-def ir_a(p, d=None):
-    st.session_state.pagina = p
-    st.session_state.sec_activa = d
-    st.rerun()
-
-# --- VISTA 1: REGISTRO ---
+# --- VISTA DE REGISTRO ---
 if st.session_state.pagina == "registro":
-    st.title("🍴 REGISTRO COMEDOR")
+    st.markdown("<h2 style='text-align:center; color:#00f2ff; margin:0;'>🍴 PANEL REGISTRO</h2>", unsafe_allow_html=True)
     
-    c1, c2 = st.columns(2)
-    with c1: fijar = st.toggle("📌 Fijar Selección")
-    with c2: rep = st.checkbox("🔄 ES REPITIENTE")
+    c_f1, c_f2 = st.columns(2)
+    with c_f1: fijar = st.toggle("📌 FIJAR", value=False)
+    with c_f2: rep = st.checkbox("🔄 REPITIENTE", value=False)
 
-    st.divider()
+    # AÑO
+    st.write("---")
+    ca1, ca2, ca3 = st.columns(3)
+    for i, opt in enumerate(["1ERO", "2DO", "3ERO"]):
+        if [ca1, ca2, ca3][i].button(opt, key=f"a_{opt}", type="primary" if st.session_state.s_a == opt else "secondary"):
+            st.session_state.s_a = None if st.session_state.s_a == opt else opt
+            st.rerun()
 
-    def fila_btns(titulo, opciones, clave, pref):
-        st.write(f"**{titulo}**")
-        cols = st.columns(len(opciones)) if len(opciones) <= 3 else st.columns(2)
-        for i, opt in enumerate(opciones):
-            es_sel = st.session_state.get(clave) == opt
-            # Llave única combinando prefijo y opción para evitar el DuplicateKeyError
-            if cols[i % len(cols)].button(opt, key=f"{pref}_{opt}", type="primary" if es_sel else "secondary"):
-                st.session_state[clave] = None if es_sel else opt
-                st.rerun()
+    # SECCIÓN
+    cs1, cs2, cs3 = st.columns(3)
+    for i, opt in enumerate(["A", "B", "C"]):
+        if [cs1, cs2, cs3][i].button(opt, key=f"s_{opt}", type="primary" if st.session_state.s_s == opt else "secondary"):
+            st.session_state.s_s = None if st.session_state.s_s == opt else opt
+            st.rerun()
 
-    fila_btns("AÑO", ["1ERO", "2DO", "3ERO"], 's_a', 'btn_a')
-    fila_btns("SECCIÓN", ["A", "B", "C"], 's_s', 'btn_s')
-    fila_btns("MENCIÓN", ["Química", "Electricidad", "Turismo", "Administración"], 's_m', 'btn_m')
+    # MENCIÓN
+    cm1, cm2 = st.columns(2)
+    menciones = ["Química", "Elect.", "Turismo", "Adm."]
+    for i, opt in enumerate(menciones):
+        if [cm1, cm2][i%2].button(opt, key=f"m_{opt}", type="primary" if st.session_state.s_m == opt else "secondary"):
+            st.session_state.s_m = None if st.session_state.s_m == opt else opt
+            st.rerun()
 
-    st.divider()
-
-    # Guardar Registro
-    if all([st.session_state.get('s_a'), st.session_state.get('s_s'), st.session_state.get('s_m')]):
+    # BOTÓN GUARDAR CON FEEDBACK
+    st.write("")
+    if all([st.session_state.s_a, st.session_state.s_s, st.session_state.s_m]):
         st.markdown('<div class="btn-save">', unsafe_allow_html=True)
-        if st.button("✅ GUARDAR REGISTRO", use_container_width=True):
+        if st.button("✅ REGISTRAR AHORA", use_container_width=True):
+            # Lógica de guardado
             nuevo = {
                 "ID": str(uuid.uuid4())[:8], "Año": st.session_state.s_a, 
                 "Seccion": st.session_state.s_s, "Mencion": st.session_state.s_m, 
@@ -119,52 +107,29 @@ if st.session_state.pagina == "registro":
             }
             df = cargar_datos()
             pd.concat([df, pd.DataFrame([nuevo])], ignore_index=True).to_csv(archivo, index=False)
+            
+            # Feedback Visual: Toast + Destello
+            st.toast(f"✅ ¡{st.session_state.s_a} {st.session_state.s_s} Guardado!", icon='🔥')
+            
             if not fijar:
                 st.session_state.s_a = st.session_state.s_s = st.session_state.s_m = None
+            
+            time.sleep(0.4) # Breve pausa para que veas el "click"
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.button("⚠️ SELECCIONE TODO", disabled=True)
 
-    # Mostrar Totales
-    df_hoy = cargar_datos()
-    if not df_hoy.empty:
-        st.divider()
-        ca, cb = st.columns(2)
-        t_est = len(df_hoy[df_hoy['Repitiente'] == False])
-        ca.markdown(f'<div class="stat-card"><b>ESTUDIANTES</b><br><span style="font-size:22px;">{t_est}</span></div>', unsafe_allow_html=True)
-        t_rep = len(df_hoy[df_hoy['Repitiente'] == True])
-        cb.markdown(f'<div class="stat-card stat-rep"><b>REPITIENTES</b><br><span style="font-size:22px;">{t_rep}</span></div>', unsafe_allow_html=True)
+    # Footer compacto
+    df_h = cargar_datos()
+    st.markdown(f"<p style='text-align:center; opacity:0.7;'>Total hoy: {len(df_h)}</p>", unsafe_allow_html=True)
+    if st.button("📂 VER LISTA COMPLETA"):
+        st.session_state.pagina = "detalle"
+        st.rerun()
 
-        st.write("### 📂 Secciones")
-        # Agrupamos por todo para que la llave sea única
-        res = df_hoy.groupby(["Año", "Seccion", "Mencion"]).size().reset_index(name='n')
-        for idx, r in res.iterrows():
-            # LLAVE ÚNICA: combina año, seccion y mencion para que no se repita nunca
-            unique_key = f"list_{r['Año']}_{r['Seccion']}_{r['Mencion']}"
-            if st.button(f"{r['Año']} {r['Seccion']} {r['Mencion']} ({r['n']})", key=unique_key):
-                ir_a("detalle", r.to_dict())
-
-        st.divider()
-        if st.button("🗑️ LIMPIAR TODO EL DÍA", type="secondary", key="reset_all"):
-            pd.DataFrame(columns=cols_fijas).to_csv(archivo, index=False)
-            st.rerun()
-
-# --- VISTA 2: DETALLE (BORRAR INDIVIDUAL) ---
 elif st.session_state.pagina == "detalle":
-    if st.button("⬅️ VOLVER", key="back_btn"): ir_a("registro")
-    
-    sel = st.session_state.sec_activa
-    st.subheader(f"Lista: {sel['Año']} {sel['Seccion']} {sel['Mencion']}")
-    
-    df = cargar_datos()
-    lista = df[(df['Año'] == sel['Año']) & (df['Seccion'] == sel['Seccion']) & (df['Mencion'] == sel['Mencion'])]
-
-    for i, r in lista.iterrows():
-        c1, c2 = st.columns([3, 1])
-        lbl = "⚠️ REP" if r['Repitiente'] else "👤 OK"
-        c1.write(f"**{r['Hora']}** | {lbl}")
-        with c2:
-            st.markdown('<div class="btn-del">', unsafe_allow_html=True)
-            if st.button("Borrar", key=f"del_{r['ID']}"):
-                df.drop(i).to_csv(archivo, index=False)
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+    if st.button("⬅️ VOLVER AL REGISTRO"):
+        st.session_state.pagina = "registro"
+        st.rerun()
+    st.write("### Historial de hoy")
+    st.dataframe(cargar_datos(), use_container_width=True)
