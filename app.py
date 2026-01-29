@@ -5,51 +5,58 @@ import os
 import uuid
 import time
 
-# 1. CONFIGURACIÓN Y CSS RADICAL (FORZADO HORIZONTAL)
+# 1. CONFIGURACIÓN Y CSS "ANTI-COLAPSO"
 st.set_page_config(page_title="Comedor Pro", layout="centered")
 
 st.markdown("""
     <style>
+    /* Fondo oscuro total */
     .stApp { background-color: #0d0221 !important; }
-    
-    /* ESTO FUERZA LAS COLUMNAS */
+
+    /* ESTO ES LO QUE BUSCAS: Forzar que las columnas NO se bajen en móvil */
     [data-testid="column"] {
-        display: flex !important;
-        flex-direction: row !important;
-        width: 33% !important;
-        min-width: 33% !important;
+        flex: 1 1 0% !important;
+        min-width: 0px !important;
     }
     
-    /* Ajuste para que los botones llenen el espacio */
+    [data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 5px !important;
+    }
+
+    /* Estilo de los botones */
     div.stButton > button {
         width: 100% !important;
-        height: 60px !important;
-        border-radius: 12px;
+        height: 55px !important;
+        border-radius: 10px;
         background-color: #1a1a2e !important;
         color: #00f2ff !important;
         border: 2px solid #5b21b6 !important;
+        font-size: 14px !important;
         font-weight: bold !important;
-        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    /* Botón seleccionado con Brillo Neón */
+    /* Botón seleccionado (Alumbra) */
     div.stButton > button[kind="primary"] {
         background-color: #7c3aed !important;
-        box-shadow: 0 0 20px #7c3aed;
+        box-shadow: 0 0 15px #7c3aed;
         border: 2px solid white !important;
         color: white !important;
     }
 
-    /* Botón Registrar Grande */
+    /* Botón Registrar (El de abajo) */
     .btn-registrar button {
         background-color: #00c9b7 !important;
-        height: 75px !important;
+        height: 70px !important;
+        font-size: 18px !important;
         color: black !important;
-        font-size: 20px !important;
-        margin-top: 20px !important;
+        box-shadow: 0 0 20px rgba(0, 201, 183, 0.6) !important;
     }
 
-    p, b { color: #00f2ff !important; font-size: 16px !important; }
+    p, b { color: #00f2ff !important; margin-bottom: 2px !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -60,53 +67,53 @@ if 's_a' not in st.session_state:
 
 def cargar_datos():
     if os.path.exists(archivo):
-        return pd.read_csv(archivo)
+        try: return pd.read_csv(archivo)
+        except: return pd.DataFrame(columns=["ID", "Año", "Seccion", "Mencion", "Repitiente", "Hora"])
     return pd.DataFrame(columns=["ID", "Año", "Seccion", "Mencion", "Repitiente", "Hora"])
 
 # 3. INTERFAZ
-st.markdown("<h2 style='text-align:center; color:#00f2ff;'>🍴 REGISTRO</h2>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align:center; color:#00f2ff;'>🍴 REGISTRO</h3>", unsafe_allow_html=True)
 
-col_t = st.columns(2)
-with col_t[0]: fijar = st.toggle("📌 Fijar")
-with col_t[1]: rep = st.checkbox("🔄 REP")
+col_opciones = st.columns(2)
+with col_opciones[0]: fijar = st.toggle("📌 Fijar")
+with col_opciones[1]: rep = st.checkbox("🔄 REP")
 
-# --- GRADO / AÑO (HORIZONTAL) ---
+# GRADO / AÑO
 st.write("**GRADO / AÑO**")
 c1, c2, c3 = st.columns(3)
 with c1: 
-    if st.button("1ERO", key="a1", type="primary" if st.session_state.s_a == "1ERO" else "secondary"):
+    if st.button("1ERO", key="a1", type="primary" if st.session_state.s_a == "1ERO" else "secondary"): 
         st.session_state.s_a = "1ERO"; st.rerun()
 with c2: 
-    if st.button("2DO", key="a2", type="primary" if st.session_state.s_a == "2DO" else "secondary"):
+    if st.button("2DO", key="a2", type="primary" if st.session_state.s_a == "2DO" else "secondary"): 
         st.session_state.s_a = "2DO"; st.rerun()
 with c3: 
-    if st.button("3ERO", key="a3", type="primary" if st.session_state.s_a == "3ERO" else "secondary"):
+    if st.button("3ERO", key="a3", type="primary" if st.session_state.s_a == "3ERO" else "secondary"): 
         st.session_state.s_a = "3ERO"; st.rerun()
 
-# --- SECCIÓN (HORIZONTAL) ---
+# SECCIÓN
 st.write("**SECCIÓN**")
 s1, s2, s3 = st.columns(3)
 with s1: 
-    if st.button("A", key="sA", type="primary" if st.session_state.s_s == "A" else "secondary"):
+    if st.button("A", key="sA", type="primary" if st.session_state.s_s == "A" else "secondary"): 
         st.session_state.s_s = "A"; st.rerun()
 with s2: 
-    if st.button("B", key="sB", type="primary" if st.session_state.s_s == "B" else "secondary"):
+    if st.button("B", key="sB", type="primary" if st.session_state.s_s == "B" else "secondary"): 
         st.session_state.s_s = "B"; st.rerun()
 with s3: 
-    if st.button("C", key="sC", type="primary" if st.session_state.s_s == "C" else "secondary"):
+    if st.button("C", key="sC", type="primary" if st.session_state.s_s == "C" else "secondary"): 
         st.session_state.s_s = "C"; st.rerun()
 
-# --- MENCIÓN (HORIZONTAL) ---
+# MENCIÓN
 st.write("**MENCIÓN**")
 m1, m2 = st.columns(2)
 with m1:
-    if st.button("QUÍMICA", key="mQ", type="primary" if st.session_state.s_m == "QUÍMICA" else "secondary"):
+    if st.button("QUÍMICA", key="mQ", type="primary" if st.session_state.s_m == "QUÍMICA" else "secondary"): 
         st.session_state.s_m = "QUÍMICA"; st.rerun()
 with m2:
-    if st.button("ELECTR.", key="mE", type="primary" if st.session_state.s_m == "ELECTR." else "secondary"):
+    if st.button("ELECTR.", key="mE", type="primary" if st.session_state.s_m == "ELECTR." else "secondary"): 
         st.session_state.s_m = "ELECTR."; st.rerun()
 
-# BOTÓN FINAL
 st.markdown('<div class="btn-registrar">', unsafe_allow_html=True)
 if st.button("✅ REGISTRAR ESTUDIANTE", use_container_width=True):
     if all([st.session_state.s_a, st.session_state.s_s, st.session_state.s_m]):
@@ -115,5 +122,5 @@ if st.button("✅ REGISTRAR ESTUDIANTE", use_container_width=True):
         pd.concat([df, pd.DataFrame([nuevo])], ignore_index=True).to_csv(archivo, index=False)
         st.toast("¡Guardado!")
         if not fijar: st.session_state.s_a = st.session_state.s_s = st.session_state.s_m = None
-        time.sleep(0.5); st.rerun()
+        time.sleep(0.3); st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
