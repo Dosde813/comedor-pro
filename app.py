@@ -5,54 +5,51 @@ import os
 import uuid
 import time
 
-# Configuración inicial para móvil
+# 1. CONFIGURACIÓN Y FORZADO DE DISEÑO HORIZONTAL EN MÓVIL
 st.set_page_config(page_title="Comedor Pro", layout="centered")
 
-# CSS Avanzado para feedback visual
 st.markdown("""
     <style>
     .stApp { background-color: #0d0221 !important; }
+    .block-container { padding-top: 1rem !important; }
     
-    .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
-    
-    /* Efecto de botones: Al tocar se encogen */
-    div.stButton > button:active {
-        transform: scale(0.95);
-        transition: 0.1s;
+    /* FORZAR COLUMNAS EN MÓVIL: Esto evita que los botones se pongan uno abajo de otro */
+    [data-testid="column"] {
+        width: calc(33% - 1rem) !important;
+        flex: 1 1 calc(33% - 1rem) !important;
+        min-width: calc(33% - 1rem) !important;
     }
 
+    /* Botones de Selección */
     div.stButton > button { 
-        width: 100%; height: 60px !important; border-radius: 10px; 
-        font-size: 16px !important; font-weight: bold;
-        border: 2px solid #5b21b6 !important;
-        background-color: #1a1a2e !important; color: #ffffff !important;
-        transition: all 0.2s;
+        width: 100%; height: 55px !important; border-radius: 10px; 
+        background-color: #1a1a2e !important; color: white !important;
+        border: 2px solid #5b21b6 !important; font-size: 14px !important;
     }
-
-    /* Botón seleccionado (Alumbra) */
+    
+    /* Efecto Alumbrar (Morado Neón) */
     .stButton button[kind="primary"] { 
         background-color: #7c3aed !important; 
-        box-shadow: 0 0 20px #7c3aed;
-        border: 2px solid #ffffff !important;
-    }
-    
-    /* Botón GUARDAR: Feedback de éxito */
-    .btn-save button {
-        background-color: #059669 !important; height: 80px !important;
-        font-size: 22px !important; border: 2px solid #ffffff !important;
-        box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
-    }
-    
-    .btn-save button:active {
-        background-color: #10b981 !important;
-        box-shadow: 0 0 30px #10b981;
+        box-shadow: 0 0 15px #7c3aed; border: 2px solid white !important;
     }
 
-    p, b, label { color: white !important; }
+    /* Botón GUARDAR (Verde) */
+    .btn-save button {
+        background-color: #059669 !important; height: 75px !important;
+        font-size: 18px !important; border: 2px solid white !important;
+    }
+
+    /* Botón BORRAR TODO (Rojo) */
+    .btn-delete-all button {
+        background-color: #b91c1c !important; color: white !important;
+        border: 1px solid white !important; height: 45px !important;
+    }
+
+    p, b, label { color: white !important; font-size: 14px !important; margin: 0 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- LÓGICA DE DATOS ---
+# 2. LÓGICA DE DATOS
 archivo = "registro_comedor.csv"
 def cargar_datos():
     if os.path.exists(archivo):
@@ -63,30 +60,32 @@ def cargar_datos():
 if 's_a' not in st.session_state:
     st.session_state.update({'s_a': None, 's_s': None, 's_m': None, 'pagina': 'registro'})
 
-# --- VISTA DE REGISTRO ---
+# 3. VISTA: REGISTRO
 if st.session_state.pagina == "registro":
-    st.markdown("<h2 style='text-align:center; color:#00f2ff; margin:0;'>🍴 PANEL REGISTRO</h2>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align:center; color:#00f2ff; margin-bottom:10px;'>🍴 REGISTRO</h3>", unsafe_allow_html=True)
     
-    c_f1, c_f2 = st.columns(2)
-    with c_f1: fijar = st.toggle("📌 FIJAR", value=False)
-    with c_f2: rep = st.checkbox("🔄 REPITIENTE", value=False)
+    c_top1, c_top2 = st.columns(2)
+    with c_top1: fijar = st.toggle("📌 Fijar", value=False)
+    with c_top2: rep = st.checkbox("🔄 REP", value=False)
 
-    # AÑO
-    st.write("---")
+    # GRADOS (1ero, 2do, 3ero en una sola línea)
+    st.write("**AÑO**")
     ca1, ca2, ca3 = st.columns(3)
     for i, opt in enumerate(["1ERO", "2DO", "3ERO"]):
         if [ca1, ca2, ca3][i].button(opt, key=f"a_{opt}", type="primary" if st.session_state.s_a == opt else "secondary"):
             st.session_state.s_a = None if st.session_state.s_a == opt else opt
             st.rerun()
 
-    # SECCIÓN
+    # SECCIONES (A, B, C en una sola línea)
+    st.write("**SECCIÓN**")
     cs1, cs2, cs3 = st.columns(3)
     for i, opt in enumerate(["A", "B", "C"]):
         if [cs1, cs2, cs3][i].button(opt, key=f"s_{opt}", type="primary" if st.session_state.s_s == opt else "secondary"):
             st.session_state.s_s = None if st.session_state.s_s == opt else opt
             st.rerun()
 
-    # MENCIÓN
+    # MENCIONES (2 y 2)
+    st.write("**MENCIÓN**")
     cm1, cm2 = st.columns(2)
     menciones = ["Química", "Elect.", "Turismo", "Adm."]
     for i, opt in enumerate(menciones):
@@ -94,42 +93,33 @@ if st.session_state.pagina == "registro":
             st.session_state.s_m = None if st.session_state.s_m == opt else opt
             st.rerun()
 
-    # BOTÓN GUARDAR CON FEEDBACK
-    st.write("")
+    # BOTÓN GUARDAR (Solo aparece si seleccionaste todo)
     if all([st.session_state.s_a, st.session_state.s_s, st.session_state.s_m]):
-        st.markdown('<div class="btn-save">', unsafe_allow_html=True)
-        if st.button("✅ REGISTRAR AHORA", use_container_width=True):
-            # Lógica de guardado
-            nuevo = {
-                "ID": str(uuid.uuid4())[:8], "Año": st.session_state.s_a, 
-                "Seccion": st.session_state.s_s, "Mencion": st.session_state.s_m, 
-                "Repitiente": rep, "Hora": datetime.now().strftime("%H:%M")
-            }
+        st.markdown('<div class="btn-save" style="margin-top:15px;">', unsafe_allow_html=True)
+        if st.button("✅ GUARDAR REGISTRO", use_container_width=True):
+            nuevo = {"ID": str(uuid.uuid4())[:8], "Año": st.session_state.s_a, "Seccion": st.session_state.s_s, "Mencion": st.session_state.s_m, "Repitiente": rep, "Hora": datetime.now().strftime("%H:%M")}
             df = cargar_datos()
             pd.concat([df, pd.DataFrame([nuevo])], ignore_index=True).to_csv(archivo, index=False)
-            
-            # Feedback Visual: Toast + Destello
-            st.toast(f"✅ ¡{st.session_state.s_a} {st.session_state.s_s} Guardado!", icon='🔥')
-            
-            if not fijar:
-                st.session_state.s_a = st.session_state.s_s = st.session_state.s_m = None
-            
-            time.sleep(0.4) # Breve pausa para que veas el "click"
+            st.toast("¡Guardado!", icon='✅')
+            if not fijar: st.session_state.s_a = st.session_state.s_s = st.session_state.s_m = None
+            time.sleep(0.3); st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # TOTALES Y BOTONES DE ABAJO
+    df_h = cargar_datos()
+    st.markdown(f"<p style='text-align:center; margin-top:10px;'>Total: {len(df_h)}</p>", unsafe_allow_html=True)
+    
+    c_bot1, c_bot2 = st.columns(2)
+    with c_bot1:
+        if st.button("📂 VER LISTA"): st.session_state.pagina = "detalle"; st.rerun()
+    with c_bot2:
+        st.markdown('<div class="btn-delete-all">', unsafe_allow_html=True)
+        if st.button("🗑️ BORRAR"):
+            pd.DataFrame(columns=["ID", "Año", "Seccion", "Mencion", "Repitiente", "Hora"]).to_csv(archivo, index=False)
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.button("⚠️ SELECCIONE TODO", disabled=True)
-
-    # Footer compacto
-    df_h = cargar_datos()
-    st.markdown(f"<p style='text-align:center; opacity:0.7;'>Total hoy: {len(df_h)}</p>", unsafe_allow_html=True)
-    if st.button("📂 VER LISTA COMPLETA"):
-        st.session_state.pagina = "detalle"
-        st.rerun()
 
 elif st.session_state.pagina == "detalle":
-    if st.button("⬅️ VOLVER AL REGISTRO"):
-        st.session_state.pagina = "registro"
-        st.rerun()
-    st.write("### Historial de hoy")
+    if st.button("⬅️ VOLVER"): st.session_state.pagina = "registro"; st.rerun()
+    st.write("### Registros")
     st.dataframe(cargar_datos(), use_container_width=True)
