@@ -5,59 +5,67 @@ import os
 import uuid
 import time
 
-# 1. CONFIGURACIÓN Y CSS RADICAL
+# 1. CONFIGURACIÓN Y CSS ULTRA-COMPACTO
 st.set_page_config(page_title="Comedor Pro", layout="centered")
 
 st.markdown("""
     <style>
     .stApp { background-color: #0d0221 !important; }
-    .block-container { padding: 0.5rem !important; }
     
-    /* CONTENEDOR MANUAL PARA BOTONES EN FILA */
-    .button-row {
+    /* Eliminar espacios vacíos extremos */
+    .block-container { padding: 0.2rem 0.5rem !important; max-width: 100% !important; }
+    header {visibility: hidden;}
+    
+    /* FORZAR COLUMNAS PEQUEÑAS EN UNA SOLA FILA */
+    [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
-        justify-content: space-between !important;
-        gap: 8px !important;
-        margin-bottom: 15px !important;
-        width: 100% !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        margin-bottom: -15px !important; /* Pegar las filas entre sí */
     }
+    
+    [data-testid="column"] { flex: 1 !important; min-width: 0 !important; }
 
-    /* ESTILO DE CADA BOTÓN DENTRO DE LA FILA */
-    div.stButton > button {
-        flex: 1 !important; /* Todos miden lo mismo */
-        height: 55px !important;
-        border-radius: 12px !important;
-        background-color: #1a1a2e !important;
+    /* Botones de Selección Mini */
+    div.stButton > button { 
+        width: 100% !important; 
+        height: 40px !important; /* Más bajos para que quepan */
+        border-radius: 8px; 
+        background-color: #1a1a2e !important; 
         color: white !important;
-        border: 2px solid #5b21b6 !important;
+        border: 1px solid #5b21b6 !important;
+        font-size: 12px !important;
+        padding: 0 !important;
+    }
+    
+    /* Alumbrar selección */
+    .stButton button[kind="primary"] { 
+        background-color: #7c3aed !important; 
+        box-shadow: 0 0 10px #7c3aed; border: 1px solid white !important;
+    }
+
+    /* BOTÓN REGISTRAR (Compacto pero llamativo) */
+    .btn-save button {
+        background-color: #00c9b7 !important; 
+        height: 55px !important; 
+        font-size: 16px !important;
         font-weight: bold !important;
-        font-size: 14px !important;
+        margin-top: 10px !important;
     }
 
-    /* BOTÓN SELECCIONADO (ALUMBRA) */
-    div.stButton > button[kind="primary"] {
-        background-color: #7c3aed !important;
-        box-shadow: 0 0 15px #7c3aed !important;
-        border: 2px solid white !important;
-    }
-
-    /* BOTÓN REGISTRAR (GIGANTE Y FIJO ABAJO) */
-    .btn-save-container button {
-        background-color: #00c9b7 !important;
-        height: 75px !important;
-        font-size: 20px !important;
-        border: 2px solid white !important;
-        box-shadow: 0 0 20px rgba(0, 201, 183, 0.5) !important;
-    }
-
-    p, b { color: #00f2ff !important; margin-bottom: 5px !important; display: block; }
+    /* Textos muy pequeños */
+    p, b, label { color: #00f2ff !important; font-size: 11px !important; margin: 0 !important; }
+    h3 { font-size: 18px !important; margin-bottom: 5px !important; color: #00f2ff !important; text-align: center; }
+    
+    /* Ajuste de toggle y checkbox */
+    .stCheckbox label, .stToggle label { font-size: 10px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. MANEJO DE DATOS
+# 2. LÓGICA DE DATOS
 archivo = "registro_comedor.csv"
-if 's_a' not in st.session_state:
+if 'pagina' not in st.session_state:
     st.session_state.update({'s_a': None, 's_s': None, 's_m': None, 'pagina': 'registro'})
 
 def cargar_datos():
@@ -66,66 +74,52 @@ def cargar_datos():
         except: return pd.DataFrame(columns=["ID", "Año", "Seccion", "Mencion", "Repitiente", "Hora"])
     return pd.DataFrame(columns=["ID", "Año", "Seccion", "Mencion", "Repitiente", "Hora"])
 
-# 3. VISTA DE REGISTRO
+# 3. VISTA: REGISTRO (TODO EN UNA PANTALLA)
 if st.session_state.pagina == "registro":
-    st.markdown("<h3 style='text-align:center; color:#00f2ff;'>🍴 PANEL DE REGISTRO</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>🍴 COMEDOR</h3>", unsafe_allow_html=True)
     
-    # Switches de arriba
-    col_t = st.columns(2)
-    with col_t[0]: fijar = st.toggle("📌 Fijar Datos")
-    with col_t[1]: rep = st.checkbox("🔄 REPITIENTE")
+    # Fila superior de opciones (muy juntas)
+    c_top = st.columns(2)
+    with c_top[0]: fijar = st.toggle("📌 Fijar", value=False)
+    with c_top[1]: rep = st.checkbox("🔄 REP")
 
-    # GRADO / AÑO
-    st.write("**GRADO / AÑO**")
-    st.markdown('<div class="button-row">', unsafe_allow_html=True)
+    # GRADO (En una sola fila horizontal)
+    st.write("**AÑO**")
     ca = st.columns(3)
     for i, opt in enumerate(["1ERO", "2DO", "3ERO"]):
         if ca[i].button(opt, key=f"a_{opt}", type="primary" if st.session_state.s_a == opt else "secondary"):
             st.session_state.s_a = opt; st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
-    # SECCIÓN
+    # SECCIÓN (En una sola fila horizontal)
     st.write("**SECCIÓN**")
-    st.markdown('<div class="button-row">', unsafe_allow_html=True)
     cs = st.columns(3)
     for i, opt in enumerate(["A", "B", "C"]):
         if cs[i].button(opt, key=f"s_{opt}", type="primary" if st.session_state.s_s == opt else "secondary"):
             st.session_state.s_s = opt; st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
-    # MENCIÓN (Distribución 2 y 2)
+    # MENCIÓN (En una sola fila horizontal - Texto corto)
     st.write("**MENCIÓN**")
-    m1 = st.columns(2)
-    opts_m = ["Química", "Electr."]
-    for i, opt in enumerate(opts_m):
-        if m1[i].button(opt, key=f"m_{opt}", type="primary" if st.session_state.s_m == opt else "secondary"):
-            st.session_state.s_m = opt; st.rerun()
-    
-    m2 = st.columns(2)
-    opts_m2 = ["Turismo", "Adm."]
-    for i, opt in enumerate(opts_m2):
-        if m2[i].button(opt, key=f"m2_{opt}", type="primary" if st.session_state.s_m == opt else "secondary"):
+    cm = st.columns(4)
+    menciones = ["QUIM", "ELEC", "TUR", "ADM"]
+    for i, opt in enumerate(menciones):
+        if cm[i].button(opt, key=f"m_{opt}", type="primary" if st.session_state.s_m == opt else "secondary"):
             st.session_state.s_m = opt; st.rerun()
 
-    # BOTÓN REGISTRAR (El gran botón verde de la foto)
-    st.markdown('<div class="btn-save-container">', unsafe_allow_html=True)
-    if st.button("✅ REGISTRAR ESTUDIANTE", use_container_width=True):
+    # BOTÓN REGISTRAR (Siempre visible al final)
+    st.markdown('<div class="btn-save">', unsafe_allow_html=True)
+    if st.button("✅ REGISTRAR AHORA", use_container_width=True):
         if all([st.session_state.s_a, st.session_state.s_s, st.session_state.s_m]):
             nuevo = {"ID": str(uuid.uuid4())[:8], "Año": st.session_state.s_a, "Seccion": st.session_state.s_s, "Mencion": st.session_state.s_m, "Repitiente": rep, "Hora": datetime.now().strftime("%H:%M")}
             df = cargar_datos()
             pd.concat([df, pd.DataFrame([nuevo])], ignore_index=True).to_csv(archivo, index=False)
-            st.toast("¡Guardado!", icon='🔥')
+            st.toast("Guardado")
             if not fijar: st.session_state.s_a = st.session_state.s_s = st.session_state.s_m = None
-            time.sleep(0.3); st.rerun()
-        else:
-            st.warning("Selecciona Grado, Sección y Mención")
+            time.sleep(0.2); st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # RESUMEN (CUADROS ABAJO)
-    df_hoy = cargar_datos()
-    if not df_hoy.empty:
-        st.write("---")
-        res = df_hoy.groupby(["Año", "Seccion", "Mencion"]).size().reset_index(name='n')
-        for _, r in res.iterrows():
-            if st.button(f"📊 {r['Año']} {r['Seccion']} {r['Mencion']} ({r['n']})", key=f"res_{uuid.uuid4()}", use_container_width=True):
-                st.session_state.sec_activa = r.to_dict(); st.session_state.pagina = "detalle"; st.rerun()
+    # Mini historial
+    df_h = cargar_datos()
+    if not df_h.empty:
+        st.markdown(f"<p style='text-align:center;'>Total hoy: {len(df_h)}</p>", unsafe_allow_html=True)
+        if st.button("📂 VER LISTADO", use_container_width=True):
+            st.session_state.pagina = "detalle"; st.rerun()
